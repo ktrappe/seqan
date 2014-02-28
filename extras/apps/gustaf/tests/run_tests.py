@@ -152,6 +152,7 @@ def main(source_base, binary_base):
               '-st', str(1),
               '-l', str(30),
               '-ith', str(5),
+              '-bth', str(5),
               ],
         to_diff=[(ph.inFile('st1_l30_m.vcf'),
                   ph.outFile('st1_l30_m.vcf'),
@@ -161,7 +162,7 @@ def main(source_base, binary_base):
     conf_list.append(conf)
 
     #out="st1_l30_ith5"
-    #${GUSTAF} adeno.fa adeno_modified_reads.fa -st 1 -l 30 -ith 5 -gff ${out}.gff -vcf ${out}.vcf > ${out}.stdout 2> ${out}.stderr
+    #${GUSTAF} adeno.fa adeno_modified_reads.fa -st 1 -l 30 -ith 5 -bth 5 -gff ${out}.gff -vcf ${out}.vcf > ${out}.stdout 2> ${out}.stderr
 
     # ============================================================
     # -st 1 -l 30 -gth 3
