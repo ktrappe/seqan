@@ -31,8 +31,11 @@ add_definitions (${SEQAN_DEFINITIONS})
 # Update the list of file names below if you add source files to your application.
 add_executable (gustaf gustaf.cpp)
 
+add_executable (variant_comp_vcf variant_comp_vcf.cpp)
+
 # Add dependencies found by find_package (SeqAn).
 target_link_libraries (gustaf ${SEQAN_LIBRARIES})
+target_link_libraries (variant_comp_vcf ${SEQAN_LIBRARIES})
 
 # Add CXX flags found by find_package (SeqAn).
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SEQAN_CXX_FLAGS}")
@@ -47,7 +50,7 @@ if (NOT SEQAN_PREFIX_SHARE_DOC)
 endif (NOT SEQAN_PREFIX_SHARE_DOC)
 
 # Install gustaf in ${PREFIX}/bin directory
-install (TARGETS gustaf
+install (TARGETS gustaf variant_comp_vcf
          DESTINATION bin)
 
 # Install non-binary files for the package to "." for app builds and
