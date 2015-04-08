@@ -474,8 +474,9 @@ void _chainMatches(QueryMatches<StellarMatch<TSequence, TId> > & queryMatches,
                 // Imprecise breakpoint?
                 // if (!doBP) bp.imprecise = true;
 
-		//std::cout << bp << std::endl;
-		//std::cout << stMatch1 << stMatch2 << std::endl;
+                std::cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+		std::cout << bp << std::endl;
+		std::cout << stMatch1 << stMatch2 << std::endl;
                 // Returns true for insertion type, get insertion infix then
                 if (setSVType(bp, refOrder))
                 {
@@ -488,7 +489,8 @@ void _chainMatches(QueryMatches<StellarMatch<TSequence, TId> > & queryMatches,
                         setInsertionSeq(bp, inSeq);
                     }
                 }
-		//std::cout << bp << std::endl;
+		std::cout << bp << std::endl;
+                std::cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
                 // TODO(ktrappe): needs adjustment of positions?
                 if (bp.svtype == TBreakpoint::DISPDUPLICATION && _isTandemOverlap(stMatch1.begin1, startSeqPos, endSeqPos, msplazerOptions.tandemThresh))
                 {
@@ -1090,9 +1092,17 @@ inline bool _invDelClassification(TBreakpoint & bp, TBreakpoint & tempBP, TBreak
         return false;
     if (bp.startSeqId != tempBP.startSeqId)
         return false;
+    if (tempBP.inferredBP)
+        return false;
+    if (bp.diffOrder || tempBP.diffOrder)
+        return _invDelTraClassification(bp, tempBP, newInvBP, bpPosRange);
 
     bool startPosSameRange = _posInSameRange(bp.startSeqPos, tempBP.startSeqPos, bpPosRange);
     bool endPosSameRange = _posInSameRange(bp.endSeqPos, tempBP.endSeqPos, bpPosRange);
+
+    std::cerr << "##########################################################" << std::endl;
+    std::cerr << bp << std::endl;
+    std::cerr << tempBP << std::endl;
 
     // Case 1: new bp is outer inv inv(v,z), old (tempBP) is inner inv inv(w,z)||inv(v,w)
     // inv(v,w)
@@ -1100,17 +1110,20 @@ inline bool _invDelClassification(TBreakpoint & bp, TBreakpoint & tempBP, TBreak
     {
         // Change new bp from inv(v,z) to deletion del(w,z)
         bp.svtype = TBreakpoint::DELETION;
+        
         bp.startSeqPos = tempBP.endSeqPos;
         bp.startSeqStrand = bp.endSeqStrand;
+    std::cerr << "##########################################################" << std::endl;
         return false;
     }
     // inv(w,z)
     if (endPosSameRange && (bp.startSeqPos < tempBP.startSeqPos))
     {
-        // Change new bp from inv(v,z) to deletion del(w,z)
+        // Change new bp from inv(v,z) to deletion del(v,w)
         bp.svtype = TBreakpoint::DELETION;
         bp.endSeqPos = tempBP.startSeqPos;
         bp.endSeqStrand = bp.startSeqStrand;
+    std::cerr << "##########################################################" << std::endl;
         return false;
     }
     // Case 2: new bp is inner inv inv(w,z)||inv(v,w), old (tempBP) is outer inv inv(v,z)
@@ -1121,15 +1134,17 @@ inline bool _invDelClassification(TBreakpoint & bp, TBreakpoint & tempBP, TBreak
         tempBP.svtype = TBreakpoint::DELETION;
         tempBP.startSeqPos = bp.endSeqPos;
         tempBP.startSeqStrand = tempBP.endSeqStrand;
+    std::cerr << "##########################################################" << std::endl;
         return false;
     }
     // inv(w,z)
     if (endPosSameRange && (bp.startSeqPos < tempBP.startSeqPos))
     {
-        // Change old bp from inv(v,z) to deletion del(w,z)
+        // Change old bp from inv(v,z) to deletion del(v,w)
         tempBP.svtype = TBreakpoint::DELETION;
         tempBP.endSeqPos = bp.startSeqPos;
         tempBP.endSeqStrand = tempBP.startSeqStrand;
+    std::cerr << "##########################################################" << std::endl;
         return false;
     }
     // Case 3: new bp inv(v,w) and old bp inv(u,z) are overlapping, i.e. there are 2 adjacent dels
@@ -1143,12 +1158,14 @@ inline bool _invDelClassification(TBreakpoint & bp, TBreakpoint & tempBP, TBreak
         newInvBP.endSeqPos = bp.endSeqPos;
         newInvBP.startSeqStrand = tempBP.startSeqStrand;
         newInvBP.endSeqStrand = bp.endSeqStrand;
+        newInvBP.inferredBP = true;
         bp.svtype = TBreakpoint::DELETION;
         bp.endSeqPos = newInvBP.startSeqPos;
         bp.endSeqStrand = bp.startSeqStrand;
         tempBP.svtype = TBreakpoint::DELETION;
         tempBP.startSeqPos = newInvBP.endSeqPos;
         tempBP.startSeqStrand = tempBP.endSeqStrand;
+    std::cerr << "##########################################################" << std::endl;
         return true;
     }
     // ii)
@@ -1159,15 +1176,242 @@ inline bool _invDelClassification(TBreakpoint & bp, TBreakpoint & tempBP, TBreak
         newInvBP.endSeqPos = tempBP.endSeqPos;
         newInvBP.startSeqStrand = bp.startSeqStrand;
         newInvBP.endSeqStrand = tempBP.endSeqStrand;
+        newInvBP.inferredBP = true;
         bp.svtype = TBreakpoint::DELETION;
         bp.startSeqPos = newInvBP.endSeqPos;
         bp.startSeqStrand = bp.endSeqStrand;
         tempBP.svtype = TBreakpoint::DELETION;
         tempBP.endSeqPos = newInvBP.startSeqPos;
         tempBP.endSeqStrand = tempBP.startSeqStrand;
+    std::cerr << "##########################################################" << std::endl;
         return true;
     }
 
+    std::cerr << "##########################################################" << std::endl;
+    return newInv;
+}
+
+// Returns true if a 3rd breakpoint (newInvBP) is inferred.
+template <typename TBreakpoint>
+inline bool _invDelTraClassification(TBreakpoint & bp, TBreakpoint & tempBP, TBreakpoint & newInvBP, unsigned const & bpPosRange)
+{
+    bool newInv = false;
+
+    bool startPosSameRange = _posInSameRange(bp.startSeqPos, tempBP.startSeqPos, bpPosRange);
+    bool endPosSameRange = _posInSameRange(bp.endSeqPos, tempBP.endSeqPos, bpPosRange);
+
+    std::cerr << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+    std::cerr << bp << std::endl;
+    std::cerr << tempBP << std::endl;
+
+    // Case 1: new bp is outer inv inv(v,z), old (tempBP) is inner inv inv(w,z)||inv(v,w)
+    // inv(v,w)
+    if (startPosSameRange && (tempBP.endSeqPos < bp.endSeqPos))
+    {
+        // Change new bp from inv(v,z) to translocation tra(w,z,v)
+        bp.svtype = TBreakpoint::TRANSLOCATION;
+        
+        bp.dupMiddlePos = tempBP.endSeqPos;
+        bp.midPosStrand = tempBP.endSeqStrand;
+        bp.dupTargetPos = bp.startSeqPos;
+        bp.inferredBP = true;
+
+        // Change old bp from inv(v,w) to deletion del(v,w)
+        tempBP.svtype = TBreakpoint::DELETION;
+        tempBP.inferredBP = true;
+    std::cerr << bp << std::endl;
+    std::cerr << tempBP << std::endl;
+    std::cerr << "case 1.1 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+        return false;
+    }
+    // inv(w,z)
+    if (endPosSameRange && (bp.startSeqPos < tempBP.startSeqPos))
+    {
+        // Change new bp from inv(v,z) to translocation tra(v,w,z)
+        bp.svtype = TBreakpoint::TRANSLOCATION;
+        bp.dupMiddlePos = tempBP.startSeqPos;
+        bp.midPosStrand = tempBP.startSeqStrand;
+        bp.dupTargetPos = bp.endSeqPos;
+        bp.inferredBP = true;
+        
+        // Change old bp from inv(w,z) to deletion del(w,z)
+        tempBP.svtype = TBreakpoint::DELETION;
+        tempBP.inferredBP = true;
+    std::cerr << bp << std::endl;
+    std::cerr << tempBP << std::endl;
+    std::cerr << "case 1.2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+        return false;
+    }
+    // Case 2: new bp is inner inv inv(w,z)||inv(v,w), old (tempBP) is outer inv inv(v,z)
+    // inv(v,w)
+    if (startPosSameRange && (bp.endSeqPos < tempBP.endSeqPos))
+    {
+        // Change old bp from inv(v,z) to translocation tra(w,z,v) (mind dupTargetPos!)
+        tempBP.svtype = TBreakpoint::TRANSLOCATION;
+        tempBP.dupMiddlePos = bp.endSeqPos;
+        tempBP.midPosStrand = bp.endSeqStrand;
+        tempBP.dupTargetPos = tempBP.startSeqPos;
+        tempBP.inferredBP = true;
+       
+        // Change new bp from inv(v,w) to deletion del(v,w)
+        bp.svtype = TBreakpoint::DELETION;
+        bp.inferredBP = true;
+    std::cerr << bp << std::endl;
+    std::cerr << tempBP << std::endl;
+    std::cerr << "case 2.1 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+        return false;
+    }
+    // inv(w,z)
+    if (endPosSameRange && (bp.startSeqPos < tempBP.startSeqPos))
+    {
+        // Change old bp from inv(v,z) to translocation tra(v,w,z)
+        tempBP.svtype = TBreakpoint::TRANSLOCATION;
+        tempBP.dupMiddlePos = bp.startSeqPos;
+        tempBP.midPosStrand = bp.startSeqStrand;
+        tempBP.dupTargetPos = tempBP.endSeqPos;
+        tempBP.inferredBP = true;
+        
+        // Change new bp from inv(w,z) to deletion del(w,z)
+        bp.svtype = TBreakpoint::DELETION;
+        bp.inferredBP = true;
+    std::cerr << bp << std::endl;
+    std::cerr << tempBP << std::endl;
+    std::cerr << "case 2.2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+        return false;
+    }
+
+    // Case 3: new bp inv(v,w) and old bp inv(u,z) are overlapping, i.e. there are 3 combined SVs
+    // Either i) v < u < w < z, then bp becomes del(u,w), tempBP tra(w,z,v) (mind dupTargetPos!), 
+    // newInvBP inv(v,u) || inv(w,z) depending on diffOrder
+    // or     ii)u < v < z < w, then bp becomes del(v,z), tempBP tra(u,v,w) (mind dupTargetPos!), 
+    // newInvBP inv(z,w) || inv(u,v) depending on diffOrder
+    // i)
+    if (_checkMatchOverlap(bp.startSeqPos, bp.endSeqPos, tempBP.startSeqPos, tempBP.endSeqPos))
+    {
+        newInvBP.svtype = TBreakpoint::INVERSION;
+        // i) inv(w,z)
+        if (bp.diffOrder)
+        {
+		newInvBP.startSeqPos = bp.endSeqPos;
+		newInvBP.endSeqPos = tempBP.endSeqPos;
+		newInvBP.startSeqStrand = bp.endSeqStrand;
+		newInvBP.endSeqStrand = tempBP.endSeqStrand;
+        }
+        // i) inv(v,u)
+        else
+        {
+		newInvBP.startSeqPos = bp.startSeqPos;
+		newInvBP.endSeqPos = tempBP.startSeqPos;
+		newInvBP.startSeqStrand = bp.startSeqStrand;
+		newInvBP.endSeqStrand = tempBP.startSeqStrand;
+        }
+        newInvBP.inferredBP = true;
+        // TODO set support IDs, default is support IDs from bp
+        // setSupportIDS(newInvBP, bp.supportIDs, tempBP.supportIDs)
+        // del(u,w), tra(v,w,z)
+        bp.svtype = TBreakpoint::DELETION;
+        tempBP.svtype = TBreakpoint::TRANSLOCATION;
+        std::swap(bp.startSeqPos,tempBP.startSeqPos);
+        std::swap(bp.startSeqStrand,tempBP.startSeqStrand);
+        tempBP.dupMiddlePos = bp.endSeqPos;
+        tempBP.midPosStrand = bp.endSeqStrand;
+        tempBP.dupTargetPos = tempBP.startSeqPos;
+    std::cerr << bp << std::endl;
+    std::cerr << tempBP << std::endl;
+    std::cerr << newInvBP << std::endl;
+    std::cerr << "case 3.1 ##########################################################" << std::endl;
+        return true;
+    }
+    // new bp inv(v,w) and old bp inv(u,z)
+    // ii) u < v < z < w, then bp becomes del(v,z), tempBP tra(u,v,w) (mind dupTargetPos!),
+    // newInvBP inv(z,w) || inv(u,v) depending on diffOrder
+    if (_checkMatchOverlap(tempBP.startSeqPos, tempBP.endSeqPos, bp.startSeqPos, bp.endSeqPos))
+    {
+        newInvBP.svtype = TBreakpoint::INVERSION;
+        // ii) inv(u,v)
+        if (bp.diffOrder)
+        {
+		newInvBP.startSeqPos = tempBP.startSeqPos;
+		newInvBP.endSeqPos = bp.startSeqPos;
+		newInvBP.startSeqStrand = tempBP.startSeqStrand;
+		newInvBP.endSeqStrand = bp.startSeqStrand;
+        }
+        // ii) inv(z,w)
+        else
+        {
+		newInvBP.startSeqPos = tempBP.endSeqPos;
+		newInvBP.endSeqPos = bp.endSeqPos;
+		newInvBP.startSeqStrand = tempBP.endSeqStrand;
+		newInvBP.endSeqStrand = bp.endSeqStrand;
+        }
+        newInvBP.inferredBP = true;
+        // TODO set support IDs
+        // setSupportIDS(newInvBP, bp.supportIDs, tempBP.supportIDs)
+        // del(v,z), tra(u,v,w)
+        bp.svtype = TBreakpoint::DELETION;
+        tempBP.svtype = TBreakpoint::TRANSLOCATION;
+        std::swap(bp.endSeqPos, tempBP.endSeqPos);
+        std::swap(bp.endSeqStrand, tempBP.endSeqStrand);
+        tempBP.dupMiddlePos = bp.startSeqPos;
+        tempBP.midPosStrand = bp.startSeqStrand;
+        tempBP.dupTargetPos = tempBP.endSeqPos;
+    std::cerr << bp << std::endl;
+    std::cerr << tempBP << std::endl;
+    std::cerr << newInvBP << std::endl;
+    std::cerr << "case 3.2 ##########################################################" << std::endl;
+        return true;
+    }
+    // case 4: new bp inv(v,w) and old bp inv(u,z) are adjacent, i.e. there are 2 combined variants
+    // i) v < w = u < z,
+    //      a) bp.diffOrder, then bp becomes tra(v,w,z), target is z
+    //      b) !bp.diffORder, then tempBP becomes tra(v,u,z), target is v
+    if (_posInSameRange(bp.endSeqPos, tempBP.startSeqPos, bpPosRange))
+    {
+        if (bp.diffOrder)
+        {
+            bp.svtype = TBreakpoint::TRANSLOCATION;
+            bp.dupMiddlePos = bp.endSeqPos;
+            bp.midPosStrand = bp.endSeqStrand;
+            bp.endSeqPos = tempBP.endSeqPos;
+            bp.endSeqStrand = tempBP.endSeqStrand;
+            bp.dupTargetPos = bp.endSeqPos;
+        }
+        else
+        {
+            tempBP.svtype = TBreakpoint::TRANSLOCATION;
+            tempBP.dupMiddlePos = tempBP.startSeqPos;
+            tempBP.midPosStrand = tempBP.startSeqStrand;
+            tempBP.startSeqPos = bp.startSeqPos;
+            tempBP.startSeqStrand = bp.startSeqStrand;
+            tempBP.dupTargetPos = tempBP.startSeqPos;
+        }
+    }
+    // ii) u < z = v < w,
+    //      a) bp.diffOrder, then bp becomes tra(u,v,w), target is u
+    //      b) !bp.diffORder, then tempBP becomes tra(u,z,w), target is w
+    if (_posInSameRange(bp.startSeqPos, tempBP.endSeqPos, bpPosRange))
+    {
+        if (bp.diffOrder)
+        {
+            bp.svtype = TBreakpoint::TRANSLOCATION;
+            bp.dupMiddlePos = bp.startSeqPos;
+            bp.midPosStrand = bp.startSeqStrand;
+            bp.startSeqPos = tempBP.startSeqPos;
+            bp.startSeqStrand = tempBP.startSeqStrand;
+            bp.dupTargetPos = bp.startSeqPos;
+        }
+        else
+        {
+            tempBP.svtype = TBreakpoint::TRANSLOCATION;
+            tempBP.dupMiddlePos = tempBP.endSeqPos;
+            tempBP.midPosStrand = tempBP.endSeqStrand;
+            tempBP.endSeqPos = bp.endSeqPos;
+            tempBP.endSeqStrand = bp.endSeqStrand;
+            tempBP.dupTargetPos = tempBP.endSeqPos;
+        }
+    }
+
+    std::cerr << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
     return newInv;
 }
 

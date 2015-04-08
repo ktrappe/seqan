@@ -137,6 +137,9 @@ struct Breakpoint
         INTERTRANSLOCATION, // 6
         TRANSLOCATION,      // 7
         BREAKEND            // 8
+        // TODO remove bool breakend
+        // LEFTBREAKEND,    // 8
+        // RIGHTBREAKEND    // 9
     };
 
     typedef TSequence_                          TSequence;
@@ -171,6 +174,8 @@ struct Breakpoint
     SVType svtype;
     TSequence insertionSeq;
     bool revStrandDel;
+    bool diffOrder;
+    bool inferredBP;
     // If both of these flags are true, then we have seen two (pseudo)deletions supporting both start and end position
     // of a translocation.
     bool translSuppStartPos;
@@ -202,6 +207,8 @@ struct Breakpoint
         svtype(INVALID),
         insertionSeq("NNNN"),
         revStrandDel(false),
+        diffOrder(false),
+        inferredBP(false),
         translSuppStartPos(false),
         translSuppEndPos(false),
         breakend(false)
@@ -235,6 +242,8 @@ struct Breakpoint
         svtype(INVALID),
         insertionSeq("NNNN"),
         revStrandDel(false),
+        diffOrder(false),
+        inferredBP(false),
         translSuppStartPos(false),
         translSuppEndPos(false),
         breakend(false)
@@ -269,6 +278,8 @@ struct Breakpoint
         svtype(INVALID),
         insertionSeq("NNNN"),
         revStrandDel(false),
+        diffOrder(false),
+        inferredBP(false),
         translSuppStartPos(false),
         translSuppEndPos(false),
         breakend(false)
@@ -518,6 +529,10 @@ inline bool setSVType(TBreakpoint & bp, bool refOrder)
         {
             std::swap(bp.startSeqPos, bp.endSeqPos);
         }
+        if (!refOrder)
+        {
+            bp.diffOrder = true;
+        }
         setSVType(bp, TBreakpoint::INVERSION);
         return false;
     }
@@ -540,6 +555,7 @@ inline bool setSVType(TBreakpoint & bp, bool refOrder)
         {
             setSVType(bp, TBreakpoint::DELETION);
             bp.revStrandDel = true;
+            bp.diffOrder = true;
             return false;
         }
         setSVType(bp, TBreakpoint::DISPDUPLICATION);
@@ -706,6 +722,7 @@ TStream & operator<<(TStream & out, Breakpoint<TSequence, TId> const & value)
         out << "SVType: breakend";
     }
     out << " insertionSeq: " << value.insertionSeq << std::endl;
+    out << " different order in reference: " << value.diffOrder << std::endl;
     out << "Support: " << value.support << " Ids: ";
     for (unsigned i = 0; i < length(value.supportIds); ++i)
         out << value.supportIds[i] << ", ";

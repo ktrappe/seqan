@@ -84,6 +84,11 @@ int msplazer(StellarOptions & stellarOptions, MSplazerOptions & msplazerOptions)
         readLength += length(queries[i]);
         */
     // std::cerr << "Loaded read seq: " << queries[i] << std::endl;
+    unsigned maxReadLength = 0;
+    for (unsigned i = 0; i < length(queries); ++i)
+        if (length(queries[i] > maxReadLength))
+            maxReadLength = length(queries[i]);
+    std::cerr << "Longest read seq: " << maxReadLength << std::endl;
     std::cout << "done" << std::endl;
 
     // import database sequence using _importSequences from Stellar
