@@ -1113,6 +1113,7 @@ inline bool _invDelClassification(TBreakpoint & bp, TBreakpoint & tempBP, TBreak
         
         bp.startSeqPos = tempBP.endSeqPos;
         bp.startSeqStrand = bp.endSeqStrand;
+        appendSupportId(bp, tempBP.supportIds);
     std::cerr << "##########################################################" << std::endl;
         return false;
     }
@@ -1123,6 +1124,7 @@ inline bool _invDelClassification(TBreakpoint & bp, TBreakpoint & tempBP, TBreak
         bp.svtype = TBreakpoint::DELETION;
         bp.endSeqPos = tempBP.startSeqPos;
         bp.endSeqStrand = bp.startSeqStrand;
+        appendSupportId(bp, tempBP.supportIds);
     std::cerr << "##########################################################" << std::endl;
         return false;
     }
@@ -1134,6 +1136,7 @@ inline bool _invDelClassification(TBreakpoint & bp, TBreakpoint & tempBP, TBreak
         tempBP.svtype = TBreakpoint::DELETION;
         tempBP.startSeqPos = bp.endSeqPos;
         tempBP.startSeqStrand = tempBP.endSeqStrand;
+        appendSupportId(tempBP, bp.supportIds);
     std::cerr << "##########################################################" << std::endl;
         return false;
     }
@@ -1144,6 +1147,7 @@ inline bool _invDelClassification(TBreakpoint & bp, TBreakpoint & tempBP, TBreak
         tempBP.svtype = TBreakpoint::DELETION;
         tempBP.endSeqPos = bp.startSeqPos;
         tempBP.endSeqStrand = tempBP.startSeqStrand;
+        appendSupportId(tempBP, bp.supportIds);
     std::cerr << "##########################################################" << std::endl;
         return false;
     }
@@ -1162,9 +1166,16 @@ inline bool _invDelClassification(TBreakpoint & bp, TBreakpoint & tempBP, TBreak
         bp.svtype = TBreakpoint::DELETION;
         bp.endSeqPos = newInvBP.startSeqPos;
         bp.endSeqStrand = bp.startSeqStrand;
+        bp.inferredBP = true;
         tempBP.svtype = TBreakpoint::DELETION;
         tempBP.startSeqPos = newInvBP.endSeqPos;
         tempBP.startSeqStrand = tempBP.endSeqStrand;
+        tempBP.inferredBP = true;
+        appendSupportId(tempBP, bp.supportIds);
+        newInvBP.supportIds = tempBP.supportIds;
+        newInvBP.support = tempBP.support;
+        bp.supportIds = tempBP.supportIds;
+        bp.support = tempBP.support;
     std::cerr << "##########################################################" << std::endl;
         return true;
     }
@@ -1180,9 +1191,16 @@ inline bool _invDelClassification(TBreakpoint & bp, TBreakpoint & tempBP, TBreak
         bp.svtype = TBreakpoint::DELETION;
         bp.startSeqPos = newInvBP.endSeqPos;
         bp.startSeqStrand = bp.endSeqStrand;
+        bp.inferredBP = true;
         tempBP.svtype = TBreakpoint::DELETION;
         tempBP.endSeqPos = newInvBP.startSeqPos;
         tempBP.endSeqStrand = tempBP.startSeqStrand;
+        tempBP.inferredBP = true;
+        appendSupportId(tempBP, bp.supportIds);
+        newInvBP.supportIds = tempBP.supportIds;
+        newInvBP.support = tempBP.support;
+        bp.supportIds = tempBP.supportIds;
+        bp.support = tempBP.support;
     std::cerr << "##########################################################" << std::endl;
         return true;
     }
@@ -1219,6 +1237,10 @@ inline bool _invDelTraClassification(TBreakpoint & bp, TBreakpoint & tempBP, TBr
         // Change old bp from inv(v,w) to deletion del(v,w)
         tempBP.svtype = TBreakpoint::DELETION;
         tempBP.inferredBP = true;
+
+        appendSupportId(tempBP, bp.supportIds);
+        bp.supportIds = tempBP.supportIds;
+        bp.support = tempBP.support;
     std::cerr << bp << std::endl;
     std::cerr << tempBP << std::endl;
     std::cerr << "case 1.1 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
@@ -1237,6 +1259,10 @@ inline bool _invDelTraClassification(TBreakpoint & bp, TBreakpoint & tempBP, TBr
         // Change old bp from inv(w,z) to deletion del(w,z)
         tempBP.svtype = TBreakpoint::DELETION;
         tempBP.inferredBP = true;
+
+        appendSupportId(tempBP, bp.supportIds);
+        bp.supportIds = tempBP.supportIds;
+        bp.support = tempBP.support;
     std::cerr << bp << std::endl;
     std::cerr << tempBP << std::endl;
     std::cerr << "case 1.2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
@@ -1256,6 +1282,10 @@ inline bool _invDelTraClassification(TBreakpoint & bp, TBreakpoint & tempBP, TBr
         // Change new bp from inv(v,w) to deletion del(v,w)
         bp.svtype = TBreakpoint::DELETION;
         bp.inferredBP = true;
+
+        appendSupportId(tempBP, bp.supportIds);
+        bp.supportIds = tempBP.supportIds;
+        bp.support = tempBP.support;
     std::cerr << bp << std::endl;
     std::cerr << tempBP << std::endl;
     std::cerr << "case 2.1 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
@@ -1274,6 +1304,10 @@ inline bool _invDelTraClassification(TBreakpoint & bp, TBreakpoint & tempBP, TBr
         // Change new bp from inv(w,z) to deletion del(w,z)
         bp.svtype = TBreakpoint::DELETION;
         bp.inferredBP = true;
+
+        appendSupportId(tempBP, bp.supportIds);
+        bp.supportIds = tempBP.supportIds;
+        bp.support = tempBP.support;
     std::cerr << bp << std::endl;
     std::cerr << tempBP << std::endl;
     std::cerr << "case 2.2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
@@ -1310,12 +1344,20 @@ inline bool _invDelTraClassification(TBreakpoint & bp, TBreakpoint & tempBP, TBr
         // setSupportIDS(newInvBP, bp.supportIDs, tempBP.supportIDs)
         // del(u,w), tra(v,w,z)
         bp.svtype = TBreakpoint::DELETION;
+        bp.inferredBP = true;
         tempBP.svtype = TBreakpoint::TRANSLOCATION;
         std::swap(bp.startSeqPos,tempBP.startSeqPos);
         std::swap(bp.startSeqStrand,tempBP.startSeqStrand);
         tempBP.dupMiddlePos = bp.endSeqPos;
         tempBP.midPosStrand = bp.endSeqStrand;
         tempBP.dupTargetPos = tempBP.startSeqPos;
+        tempBP.inferredBP = true;
+
+        appendSupportId(tempBP, bp.supportIds);
+        newInvBP.supportIds = tempBP.supportIds;
+        newInvBP.support = tempBP.support;
+        bp.supportIds = tempBP.supportIds;
+        bp.support = tempBP.support;
     std::cerr << bp << std::endl;
     std::cerr << tempBP << std::endl;
     std::cerr << newInvBP << std::endl;
@@ -1345,16 +1387,21 @@ inline bool _invDelTraClassification(TBreakpoint & bp, TBreakpoint & tempBP, TBr
 		newInvBP.endSeqStrand = bp.endSeqStrand;
         }
         newInvBP.inferredBP = true;
-        // TODO set support IDs
-        // setSupportIDS(newInvBP, bp.supportIDs, tempBP.supportIDs)
-        // del(v,z), tra(u,v,w)
         bp.svtype = TBreakpoint::DELETION;
+        bp.inferredBP = true;
         tempBP.svtype = TBreakpoint::TRANSLOCATION;
         std::swap(bp.endSeqPos, tempBP.endSeqPos);
         std::swap(bp.endSeqStrand, tempBP.endSeqStrand);
         tempBP.dupMiddlePos = bp.startSeqPos;
         tempBP.midPosStrand = bp.startSeqStrand;
         tempBP.dupTargetPos = tempBP.endSeqPos;
+        tempBP.inferredBP = true;
+
+        appendSupportId(tempBP, bp.supportIds);
+        newInvBP.supportIds = tempBP.supportIds;
+        newInvBP.support = tempBP.support;
+        bp.supportIds = tempBP.supportIds;
+        bp.support = tempBP.support;
     std::cerr << bp << std::endl;
     std::cerr << tempBP << std::endl;
     std::cerr << newInvBP << std::endl;
@@ -1375,6 +1422,8 @@ inline bool _invDelTraClassification(TBreakpoint & bp, TBreakpoint & tempBP, TBr
             bp.endSeqPos = tempBP.endSeqPos;
             bp.endSeqStrand = tempBP.endSeqStrand;
             bp.dupTargetPos = bp.endSeqPos;
+            bp.inferredBP = true;
+            appendSupportId(bp, tempBP.supportIds);
         }
         else
         {
@@ -1384,7 +1433,11 @@ inline bool _invDelTraClassification(TBreakpoint & bp, TBreakpoint & tempBP, TBr
             tempBP.startSeqPos = bp.startSeqPos;
             tempBP.startSeqStrand = bp.startSeqStrand;
             tempBP.dupTargetPos = tempBP.startSeqPos;
+            tempBP.inferredBP = true;
+            appendSupportId(tempBP, bp.supportIds);
         }
+        return false;
+        
     }
     // ii) u < z = v < w,
     //      a) bp.diffOrder, then bp becomes tra(u,v,w), target is u
@@ -1399,6 +1452,8 @@ inline bool _invDelTraClassification(TBreakpoint & bp, TBreakpoint & tempBP, TBr
             bp.startSeqPos = tempBP.startSeqPos;
             bp.startSeqStrand = tempBP.startSeqStrand;
             bp.dupTargetPos = bp.startSeqPos;
+            bp.inferredBP = true;
+            appendSupportId(bp, tempBP.supportIds);
         }
         else
         {
@@ -1408,7 +1463,10 @@ inline bool _invDelTraClassification(TBreakpoint & bp, TBreakpoint & tempBP, TBr
             tempBP.endSeqPos = bp.endSeqPos;
             tempBP.endSeqStrand = bp.endSeqStrand;
             tempBP.dupTargetPos = tempBP.endSeqPos;
+            tempBP.inferredBP = true;
+            appendSupportId(tempBP, bp.supportIds);
         }
+        return false;
     }
 
     std::cerr << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
@@ -1495,6 +1553,8 @@ inline void _insertBreakpoint(String<TBreakpoint> & countedBP, TBreakpoint & bp,
     for (unsigned i = 0; i < length(countedBP); ++i)
     {
         TBreakpoint & tempBP = countedBP[i];
+        // If breakpoints are equal, add new bp IDs as support, keep only old
+        // If breakpoints are in the bpPosRange, keep left most positions, and add new bp IDs to old
         if (bp == tempBP)
         {
             appendSupportId(tempBP, bp.supportIds);
